@@ -61,10 +61,14 @@ def main_kb(is_admin=False):
 
 
 def check_kb():
-    return types.ReplyKeyboardMarkup(
-        keyboard=[[types.KeyboardButton(text=BTN_CHECK)]],
-        resize_keyboard=True,
-    )
+    buttons = []
+    for ch in REQUIRED_CHANNELS:
+        channel_username = ch.replace("@", "").strip()
+        buttons.append(
+            [types.InlineKeyboardButton(text=ch, url=f"https://t.me/{channel_username}")]
+        )
+    buttons.append([types.InlineKeyboardButton(text="Tekshirish", callback_data="check_sub")])
+    return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 def share_kb(ref_link):
@@ -226,8 +230,7 @@ async def start(message: types.Message):
             await set_pending_referrer(user_id, ref_id)
 
     if not await is_member_all_channels(user_id):
-        txt = "Davom etish uchun kanalga azo boling:\n"
-        txt += "\n".join(REQUIRED_CHANNELS)
+        txt = "Davom etish uchun kanalga azo boling:"
         txt += "\n\nAzo bolgach tekshirish tugmasini bosing."
         try:
             return await message.answer(txt, reply_markup=check_kb())
@@ -249,7 +252,6 @@ async def check_sub(message: types.Message):
 
     if not await is_member_all_channels(user_id):
         txt = "Hali ham azo emassiz.\n\n"
-        txt += "\n".join(REQUIRED_CHANNELS)
         try:
             return await message.answer(txt, reply_markup=check_kb())
         except Exception:
@@ -259,6 +261,28 @@ async def check_sub(message: types.Message):
     try:
         await message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
         await message.answer(await build_start_text(user_id))
+    except Exception:
+        pass
+
+
+@dp.callback_query(lambda c: c.data == "check_sub")
+async def check_sub_callback(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    is_admin = user_id in ADMIN_IDS
+
+    if not await is_member_all_channels(user_id):
+        try:
+            await callback.answer("Hali azo emassiz.", show_alert=False)
+            await callback.message.answer("Hali ham azo emassiz.\n\nKanallarga azo boling.", reply_markup=check_kb())
+        except Exception:
+            pass
+        return
+
+    await try_confirm_pending(user_id)
+    try:
+        await callback.answer("Tasdiqlandi.", show_alert=False)
+        await callback.message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
+        await callback.message.answer(await build_start_text(user_id))
     except Exception:
         pass
 
