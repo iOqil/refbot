@@ -67,7 +67,7 @@ def check_kb():
         buttons.append(
             [types.InlineKeyboardButton(text=ch, url=f"https://t.me/{channel_username}")]
         )
-    buttons.append([types.InlineKeyboardButton(text="Tekshirish", callback_data="check_sub")])
+    buttons.append([types.InlineKeyboardButton(text="✅ Tekshirish", callback_data="check_sub")])
     return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
