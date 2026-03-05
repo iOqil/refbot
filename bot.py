@@ -6,7 +6,6 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart, Command
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import BOT_TOKEN, ADMIN_IDS, REQUIRED_CHANNELS
 from backup import make_mysql_backup, cleanup_old_backups
@@ -28,22 +27,23 @@ from db import (
     get_all_confirmed_referrals,
     reset_all_referrals,
     is_in_blacklist,
-    clear_blacklist
+    clear_blacklist,
+    execute,
 )
 
 bot = Bot(token=BOT_TOKEN)
-dp  = Dispatcher()
+dp = Dispatcher()
 
-BTN_LINK   = "Referral link"
-BTN_STATS  = "Statistika"
-BTN_TOP    = "Top 10"
-BTN_CHECK  = "Azzolikni tekshirish"
+BTN_LINK = "Referral link"
+BTN_STATS = "Statistika"
+BTN_TOP = "Top 10"
+BTN_CHECK = "Azzolikni tekshirish"
 
 ADM_EXPORT = "Statistika txt"
-ADM_STOP   = "Konkursni tugatish"
-ADM_START  = "Konkursni boshlash"
-ADM_RESET  = "Qayta boshlash"
-ADM_TOP    = "Top 10 ni korish"
+ADM_STOP = "Konkursni tugatish"
+ADM_START = "Konkursni boshlash"
+ADM_RESET = "Qayta boshlash"
+ADM_TOP = "Top 10 ni korish"
 
 
 # ---------- Keyboards ----------
@@ -51,7 +51,7 @@ ADM_TOP    = "Top 10 ni korish"
 def main_kb(is_admin=False):
     rows = [
         [types.KeyboardButton(text=BTN_LINK)],
-        [types.KeyboardButton(text=BTN_STATS), types.KeyboardButton(text=BTN_TOP)]
+        [types.KeyboardButton(text=BTN_STATS), types.KeyboardButton(text=BTN_TOP)],
     ]
     if is_admin:
         rows.append([types.KeyboardButton(text=ADM_EXPORT)])
@@ -63,15 +63,15 @@ def main_kb(is_admin=False):
 def check_kb():
     return types.ReplyKeyboardMarkup(
         keyboard=[[types.KeyboardButton(text=BTN_CHECK)]],
-        resize_keyboard=True
+        resize_keyboard=True,
     )
 
 
 def share_kb(ref_link):
     return types.InlineKeyboardMarkup(
-        inline_keyboard=[[
-            types.InlineKeyboardButton(text="Ulashish", switch_inline_query=ref_link)
-        ]]
+        inline_keyboard=[
+            [types.InlineKeyboardButton(text="Ulashish", switch_inline_query=ref_link)]
+        ]
     )
 
 
@@ -89,9 +89,7 @@ async def send_daily_backup():
     while True:
         now = time.localtime()
         seconds_until_midnight = (
-            (23 - now.tm_hour) * 3600 +
-            (59 - now.tm_min) * 60 +
-            (60 - now.tm_sec)
+            (23 - now.tm_hour) * 3600 + (59 - now.tm_min) * 60 + (60 - now.tm_sec)
         )
         await asyncio.sleep(seconds_until_midnight)
         try:
@@ -103,10 +101,7 @@ async def send_daily_backup():
             ts_str = time.strftime("%Y-%m-%d")
             for admin_id in ADMIN_IDS:
                 try:
-                    await bot.send_document(
-                        admin_id, doc,
-                        caption="Kunlik backup " + ts_str
-                    )
+                    await bot.send_document(admin_id, doc, caption="Kunlik backup " + ts_str)
                     await asyncio.sleep(1)
                 except Exception:
                     pass
@@ -160,38 +155,31 @@ async def try_confirm_pending(user_id):
     ts = int(time.time())
 
     if pending_ref and pending_ref != user_id:
-        ok = await confirm_referral(
-            invited_id=user_id, referrer_id=pending_ref, ts=ts
-        )
+        ok = await confirm_referral(invited_id=user_id, referrer_id=pending_ref, ts=ts)
         if ok:
             try:
                 new_cnt = await referral_count(pending_ref)
-                await bot.send_message(
-                    pending_ref,
-                    "Yangi referral qoshildi!\nJami: " + str(new_cnt)
-                )
+                await bot.send_message(pending_ref, "Yangi referral qoshildi!\nJami: " + str(new_cnt))
             except Exception:
                 pass
             await do_backup()
         return
 
-    # Kanaldan chiqib qaytgan user — reaktivatsiya
-    from db import execute
+    # Kanaldan chiqib qaytgan user - reaktivatsiya.
     row = await execute(
         "SELECT referrer_id, active FROM referrals WHERE invited_id=%s",
-        (user_id,), fetch="one"
+        (user_id,),
+        fetch="one",
     )
     if row and row[1] == 0:
         old_referrer = row[0]
-        ok = await confirm_referral(
-            invited_id=user_id, referrer_id=old_referrer, ts=ts
-        )
+        ok = await confirm_referral(invited_id=user_id, referrer_id=old_referrer, ts=ts)
         if ok:
             try:
                 new_cnt = await referral_count(old_referrer)
                 await bot.send_message(
                     old_referrer,
-                    "Foydalanuvchi qaytib keldi! Referral tiklandl.\nJami: " + str(new_cnt)
+                    "Foydalanuvchi qaytib keldi! Referral tiklandi.\nJami: " + str(new_cnt),
                 )
             except Exception:
                 pass
@@ -199,27 +187,6 @@ async def try_confirm_pending(user_id):
 
 
 # ---------- Handlers ----------
-
-def check_kb():
-
-    buttons = []
-
-    for ch in REQUIRED_CHANNELS:
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"📢 {ch}",
-                url=f"https://t.me/{ch.replace('@','')}"
-            )
-        ])
-
-    buttons.append([
-+         types.InlineKeyboardButton(
-+             text="✅ Tekshirish",
-+             callback_data="check_sub"
-+         )
-+   ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 @dp.message(CommandStart())
 async def start(message: types.Message):
@@ -231,7 +198,7 @@ async def start(message: types.Message):
         user_id=user_id,
         username=message.from_user.username or "",
         full_name=message.from_user.full_name or "",
-        ts=ts
+        ts=ts,
     )
 
     contest = await get_setting("contest_status") or "running"
@@ -260,6 +227,7 @@ async def start(message: types.Message):
 
     if not await is_member_all_channels(user_id):
         txt = "Davom etish uchun kanalga azo boling:\n"
+        txt += "\n".join(REQUIRED_CHANNELS)
         txt += "\n\nAzo bolgach tekshirish tugmasini bosing."
         try:
             return await message.answer(txt, reply_markup=check_kb())
@@ -273,51 +241,26 @@ async def start(message: types.Message):
     except Exception:
         pass
 
+
 @dp.message(lambda m: m.text == BTN_CHECK)
 async def check_sub(message: types.Message):
-
     user_id = message.from_user.id
     is_admin = user_id in ADMIN_IDS
 
     if not await is_member_all_channels(user_id):
-
-        txt = "Hali ham azo emassiz."
-
-        return await message.answer(
-            txt,
-            reply_markup=check_kb()
-        )
+        txt = "Hali ham azo emassiz.\n\n"
+        txt += "\n".join(REQUIRED_CHANNELS)
+        try:
+            return await message.answer(txt, reply_markup=check_kb())
+        except Exception:
+            return
 
     await try_confirm_pending(user_id)
-
-    await message.answer(
-        "Azolik tasdiqlandi. ✅",
-        reply_markup=main_kb(is_admin)
-    )
-
-    await message.answer(
-        await build_start_text(user_id)
-    )
-
-# @dp.message(lambda m: m.text == BTN_CHECK)
-# async def check_sub(message: types.Message):
-#     user_id = message.from_user.id
-#     is_admin = user_id in ADMIN_IDS
-
-#     if not await is_member_all_channels(user_id):
-#         txt = "Hali ham azo emassiz.\n\n"
-#         txt += "\n".join(REQUIRED_CHANNELS)
-#         try:
-#             return await message.answer(txt, reply_markup=check_kb())
-#         except Exception:
-#             return
-
-#     await try_confirm_pending(user_id)
-#     try:
-#         await message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
-#         await message.answer(await build_start_text(user_id))
-#     except Exception:
-#         pass
+    try:
+        await message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
+        await message.answer(await build_start_text(user_id))
+    except Exception:
+        pass
 
 
 @dp.message(lambda m: m.text == BTN_LINK)
@@ -327,7 +270,7 @@ async def my_link(message: types.Message):
     cnt = await referral_count(user_id)
     await message.answer(
         "Referral linkingiz:\n" + link + "\n\nTakliflar: " + str(cnt),
-        reply_markup=share_kb(link)
+        reply_markup=share_kb(link),
     )
 
 
@@ -384,7 +327,7 @@ async def adm_stop(message: types.Message):
     await set_setting("contest_status", "stopped")
     await message.answer(
         "Konkurs tugatildi!\n\nTop 10 ni korish uchun tugmani bosing.",
-        reply_markup=main_kb(is_admin=True)
+        reply_markup=main_kb(is_admin=True),
     )
 
 
@@ -406,12 +349,14 @@ async def adm_show_top(message: types.Message):
     text += "\nYuborish uchun quyidagi tugmani bosing."
 
     kb = types.InlineKeyboardMarkup(
-        inline_keyboard=[[
-            types.InlineKeyboardButton(
-                text="Tasdiqlash - Yuborish",
-                callback_data="confirm_top10"
-            )
-        ]]
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="Tasdiqlash - Yuborish",
+                    callback_data="confirm_top10",
+                )
+            ]
+        ]
     )
     await message.answer(text, reply_markup=kb)
 
@@ -451,7 +396,7 @@ async def adm_start_contest(message: types.Message):
     await set_setting("contest_status", "running")
     await message.answer(
         "Yangi konkurs boshlandi! Barcha qatnasha oladi.",
-        reply_markup=main_kb(is_admin=True)
+        reply_markup=main_kb(is_admin=True),
     )
 
 
@@ -463,20 +408,21 @@ async def adm_reset(message: types.Message):
         return
 
     kb = types.InlineKeyboardMarkup(
-        inline_keyboard=[[
-            types.InlineKeyboardButton(
-                text="Ha, qayta boshlash", callback_data="confirm_reset"
-            ),
-            types.InlineKeyboardButton(
-                text="Bekor", callback_data="cancel_reset"
-            )
-        ]]
+        inline_keyboard=[
+            [
+                types.InlineKeyboardButton(
+                    text="Ha, qayta boshlash",
+                    callback_data="confirm_reset",
+                ),
+                types.InlineKeyboardButton(text="Bekor", callback_data="cancel_reset"),
+            ]
+        ]
     )
     await message.answer(
         "Diqqat!\n\nBarcha referrallar 0ga tushadi.\n"
         "Avval qatnashgan userlar qayta hisoblanmaydi.\n\n"
         "Davom etasizmi?",
-        reply_markup=kb
+        reply_markup=kb,
     )
 
 
@@ -569,7 +515,7 @@ async def revoke_left_users():
                     "Bir foydalanuvchi kanaldan chiqib ketdi.\n"
                     "Referral vaqtincha bekor qilindi.\n"
                     "Qaytib kirsa avtomatik tiklanadi.\n"
-                    "Hozircha jami: " + str(new_cnt)
+                    "Hozircha jami: " + str(new_cnt),
                 )
             except Exception:
                 pass

@@ -1,5 +1,8 @@
 import os
 from typing import Tuple
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 def _split_host_port(host_value: str):
