@@ -253,7 +253,7 @@ async def start(message: types.Message):
         pass
     
 
-def check_kb():
+def check_in_kb():
 
     buttons = []
 
@@ -287,7 +287,7 @@ async def check_sub(message: types.Message):
 
         return await message.answer(
             txt,
-            reply_markup=check_kb()
+            reply_markup=check_in_kb()
         )
 
     await try_confirm_pending(user_id)
