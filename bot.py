@@ -200,6 +200,27 @@ async def try_confirm_pending(user_id):
 
 # ---------- Handlers ----------
 
+def check_kb():
+
+    buttons = []
+
+    for ch in REQUIRED_CHANNELS:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"📢 {ch}",
+                url=f"https://t.me/{ch.replace('@','')}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text="✅ Tekshirish",
+            callback_data="check_sub"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 @dp.message(CommandStart())
 async def start(message: types.Message):
     ts = int(time.time())
@@ -238,13 +259,10 @@ async def start(message: types.Message):
             await set_pending_referrer(user_id, ref_id)
 
     if not await is_member_all_channels(user_id):
-        txt = "Davom etish uchun kanalga azo boling:"
+        txt = "Davom etish uchun kanalga azo boling:\n"
         txt += "\n\nAzo bolgach tekshirish tugmasini bosing."
         try:
-            return await message.answer(
-            txt,
-            reply_markup=check_inline_kb()
-        )
+            return await message.answer(txt, reply_markup=check_kb())
         except Exception:
             return
 
@@ -254,29 +272,6 @@ async def start(message: types.Message):
         await message.answer(text, reply_markup=main_kb(is_admin))
     except Exception:
         pass
-    
-
-def check_in_kb():
-
-    buttons = []
-
-    for ch in REQUIRED_CHANNELS:
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"📢 {ch}",
-                url=f"https://t.me/{ch.replace('@','')}"
-            )
-        ])
-
-    buttons.append([
-        InlineKeyboardButton(
-            text="✅ Tekshirish",
-            callback_data="check_sub"
-        )
-    ])
-
-    return types.InlineKeyboardMarkup(inline_keyboard=buttons)
-
 
 @dp.message(lambda m: m.text == BTN_CHECK)
 async def check_sub(message: types.Message):
@@ -290,7 +285,7 @@ async def check_sub(message: types.Message):
 
         return await message.answer(
             txt,
-            reply_markup=check_in_kb()
+            reply_markup=check_kb()
         )
 
     await try_confirm_pending(user_id)
