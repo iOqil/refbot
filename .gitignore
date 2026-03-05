@@ -1,0 +1,24 @@
+# Maxfiy fayllar - GitHub ga yuklanmaydi!
+.env
+bot.db
+*.db
+
+# Backup fayllar
+backups/
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Logs
+nohup.out
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
