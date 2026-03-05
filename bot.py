@@ -261,14 +261,14 @@ def check_kb():
     for ch in REQUIRED_CHANNELS:
         buttons.append([
             InlineKeyboardButton(
-                text=f"Obuna bo'lish {ch}",
+                text=f"📢 {ch}",
                 url=f"https://t.me/{ch.replace('@','')}"
             )
         ])
 
     buttons.append([
         InlineKeyboardButton(
-            text="Tekshirish",
+            text="✅ Tekshirish",
             callback_data="check_sub"
         )
     ])
@@ -283,8 +283,7 @@ async def check_sub(message: types.Message):
 
     if not await is_member_all_channels(user_id):
 
-        txt = "Hali ham azo emassiz.\n\n"
-        txt += "\n".join(REQUIRED_CHANNELS)
+        txt = "Hali ham azo emassiz."
 
         return await message.answer(
             txt,
@@ -294,7 +293,7 @@ async def check_sub(message: types.Message):
     await try_confirm_pending(user_id)
 
     await message.answer(
-        "Azolik tasdiqlandi.",
+        "Azolik tasdiqlandi. ✅",
         reply_markup=main_kb(is_admin)
     )
 
