@@ -213,11 +213,11 @@ def check_kb():
         ])
 
     buttons.append([
-        InlineKeyboardButton(
-            text="✅ Tekshirish",
-            callback_data="check_sub"
-        )
-    ])
++         types.InlineKeyboardButton(
++             text="✅ Tekshirish",
++             callback_data="check_sub"
++         )
++   ])
 
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
