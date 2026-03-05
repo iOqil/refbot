@@ -241,7 +241,10 @@ async def start(message: types.Message):
         txt = "Davom etish uchun kanalga azo boling:"
         txt += "\n\nAzo bolgach tekshirish tugmasini bosing."
         try:
-            return await message.answer(txt, reply_markup=check_kb())
+            return await message.answer(
+            txt,
+            reply_markup=check_inline_kb()
+        )
         except Exception:
             return
 
@@ -272,34 +275,70 @@ def check_in_kb():
         )
     ])
 
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
+    return types.InlineKeyboardMarkup(inline_keyboard=buttons)
 
 
 @dp.message(lambda m: m.text == BTN_CHECK)
-async def check_sub(message: types.Message):
-
+async def check_sub_message(message: types.Message):
     user_id = message.from_user.id
+    txt = "Davom etish uchun kanalga azo bo‘ling:\n\nAzo bo‘lgach tekshirish tugmasini bosing."
+    await message.answer(
+        txt,
+        reply_markup=check_in_kb()
+    )
+    
+    
+@dp.callback_query(lambda c: c.data == "check_sub_inline")
+async def check_sub_callback(call: types.CallbackQuery):
+    await call.answer()  # majburiy
+
+    user_id = call.from_user.id
     is_admin = user_id in ADMIN_IDS
 
     if not await is_member_all_channels(user_id):
-
         txt = "Hali ham azo emassiz."
-
-        return await message.answer(
+        await call.message.edit_text(
             txt,
             reply_markup=check_in_kb()
         )
+        return
 
     await try_confirm_pending(user_id)
 
-    await message.answer(
+    await call.message.edit_text(
         "Azolik tasdiqlandi. ✅",
         reply_markup=main_kb(is_admin)
     )
 
-    await message.answer(
+    await call.message.answer(
         await build_start_text(user_id)
     )
+
+# @dp.message(lambda m: m.text == BTN_CHECK)
+# async def check_sub(message: types.Message):
+
+#     user_id = message.from_user.id
+#     is_admin = user_id in ADMIN_IDS
+
+#     if not await is_member_all_channels(user_id):
+
+#         txt = "Hali ham azo emassiz."
+
+#         return await message.answer(
+#             txt,
+#             reply_markup=check_in_kb()
+#         )
+
+#     await try_confirm_pending(user_id)
+
+#     await message.answer(
+#         "Azolik tasdiqlandi. ✅",
+#         reply_markup=main_kb(is_admin)
+#     )
+
+#     await message.answer(
+#         await build_start_text(user_id)
+#     )
 
 # @dp.message(lambda m: m.text == BTN_CHECK)
 # async def check_sub(message: types.Message):
