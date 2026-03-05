@@ -6,6 +6,7 @@ import os
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart, Command
 from aiogram.exceptions import TelegramForbiddenError, TelegramBadRequest
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
 from config import BOT_TOKEN, ADMIN_IDS, REQUIRED_CHANNELS
 from backup import make_mysql_backup, cleanup_old_backups
@@ -199,6 +200,27 @@ async def try_confirm_pending(user_id):
 
 # ---------- Handlers ----------
 
+# def check_kb():
+
+#     buttons = []
+
+#     for ch in REQUIRED_CHANNELS:
+#         buttons.append([
+#             InlineKeyboardButton(
+#                 text=f"📢 {ch}",
+#                 url=f"https://t.me/{ch.replace('@','')}"
+#             )
+#         ])
+
+#     buttons.append([
+#         InlineKeyboardButton(
+#             text="✅ Tekshirish",
+#             callback_data="check_sub"
+#         )
+#     ])
+
+#     return InlineKeyboardMarkup(inline_keyboard=buttons)
+
 @dp.message(CommandStart())
 async def start(message: types.Message):
     ts = int(time.time())
@@ -251,29 +273,6 @@ async def start(message: types.Message):
         await message.answer(text, reply_markup=main_kb(is_admin))
     except Exception:
         pass
-
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
-def check_kb():
-
-    buttons = []
-
-    for ch in REQUIRED_CHANNELS:
-        buttons.append([
-            InlineKeyboardButton(
-                text=f"📢 {ch}",
-                url=f"https://t.me/{ch.replace('@','')}"
-            )
-        ])
-
-    buttons.append([
-        InlineKeyboardButton(
-            text="✅ Tekshirish",
-            callback_data="check_sub"
-        )
-    ])
-
-    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 @dp.message(lambda m: m.text == BTN_CHECK)
 async def check_sub(message: types.Message):
