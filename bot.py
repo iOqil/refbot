@@ -252,26 +252,75 @@ async def start(message: types.Message):
     except Exception:
         pass
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+def check_kb():
+
+    buttons = []
+
+    for ch in REQUIRED_CHANNELS:
+        buttons.append([
+            InlineKeyboardButton(
+                text=f"Obuna bo'lish {ch}",
+                url=f"https://t.me/{ch.replace('@','')}"
+            )
+        ])
+
+    buttons.append([
+        InlineKeyboardButton(
+            text="Tekshirish",
+            callback_data="check_sub"
+        )
+    ])
+
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 @dp.message(lambda m: m.text == BTN_CHECK)
 async def check_sub(message: types.Message):
+
     user_id = message.from_user.id
     is_admin = user_id in ADMIN_IDS
 
     if not await is_member_all_channels(user_id):
+
         txt = "Hali ham azo emassiz.\n\n"
         txt += "\n".join(REQUIRED_CHANNELS)
-        try:
-            return await message.answer(txt, reply_markup=check_kb())
-        except Exception:
-            return
+
+        return await message.answer(
+            txt,
+            reply_markup=check_kb()
+        )
 
     await try_confirm_pending(user_id)
-    try:
-        await message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
-        await message.answer(await build_start_text(user_id))
-    except Exception:
-        pass
+
+    await message.answer(
+        "Azolik tasdiqlandi.",
+        reply_markup=main_kb(is_admin)
+    )
+
+    await message.answer(
+        await build_start_text(user_id)
+    )
+
+# @dp.message(lambda m: m.text == BTN_CHECK)
+# async def check_sub(message: types.Message):
+#     user_id = message.from_user.id
+#     is_admin = user_id in ADMIN_IDS
+
+#     if not await is_member_all_channels(user_id):
+#         txt = "Hali ham azo emassiz.\n\n"
+#         txt += "\n".join(REQUIRED_CHANNELS)
+#         try:
+#             return await message.answer(txt, reply_markup=check_kb())
+#         except Exception:
+#             return
+
+#     await try_confirm_pending(user_id)
+#     try:
+#         await message.answer("Azolik tasdiqlandi.", reply_markup=main_kb(is_admin))
+#         await message.answer(await build_start_text(user_id))
+#     except Exception:
+#         pass
 
 
 @dp.message(lambda m: m.text == BTN_LINK)
