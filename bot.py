@@ -212,13 +212,6 @@ def check_kb():
             )
         ])
 
-    buttons.append([
-        InlineKeyboardButton(
-            text="✅ Tekshirish",
-            callback_data="check_sub"
-        )
-    ])
-
     return InlineKeyboardMarkup(inline_keyboard=buttons)
 
 @dp.message(CommandStart())
