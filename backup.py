@@ -1,6 +1,7 @@
 import os
 import time
 import asyncio
+from db_config import get_db_settings
 
 BACKUP_DIR = "backups"
 
@@ -18,23 +19,28 @@ async def make_mysql_backup() -> str:
     ts = time.strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(BACKUP_DIR, f"backup_{ts}.sql")
 
-    host     = os.getenv("MYSQL_HOST", "db")
-    port     = os.getenv("MYSQL_PORT", "3306")
-    user     = os.getenv("MYSQL_USER", "refbot")
-    password = os.getenv("MYSQL_PASSWORD", "")
-    db       = os.getenv("MYSQL_DB", "refbot_db")
+    host, port, user, password, db = get_db_settings()
 
-    cmd = (
-        f"mysqldump -h {host} -P {port} -u {user} "
-        f"-p{password} {db} > {filename}"
-    )
+    env = os.environ.copy()
+    env["MYSQL_PWD"] = password
 
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    await proc.communicate()
+    with open(filename, "wb") as dump_out:
+        proc = await asyncio.create_subprocess_exec(
+            "mysqldump",
+            "-h", host,
+            "-P", str(port),
+            "-u", user,
+            db,
+            stdout=dump_out,
+            stderr=asyncio.subprocess.PIPE,
+            env=env,
+        )
+        _, stderr = await proc.communicate()
+
+    if proc.returncode != 0:
+        err = (stderr or b"").decode("utf-8", errors="ignore").strip()
+        raise RuntimeError("mysqldump failed: " + err)
+
     return filename
 
 

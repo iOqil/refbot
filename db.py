@@ -1,12 +1,8 @@
-import os
 import aiomysql
+from db_config import get_db_settings
 
-# MySQL sozlamalari .env dan
-DB_HOST     = os.getenv("MYSQL_HOST", "localhost")
-DB_PORT     = int(os.getenv("MYSQL_PORT", "3306"))
-DB_USER     = os.getenv("MYSQL_USER", "refbot")
-DB_PASSWORD = os.getenv("MYSQL_PASSWORD", "")
-DB_NAME     = os.getenv("MYSQL_DB", "refbot_db")
+# MySQL sozlamalari (.env: MYSQL_* yoki DB_*)
+DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME = get_db_settings()
 
 # Global connection pool
 _pool = None

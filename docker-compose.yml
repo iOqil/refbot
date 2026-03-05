@@ -9,13 +9,11 @@ services:
       - .env
     volumes:
       - bot_backups:/app/backups
-    depends_on:
-      db:
-        condition: service_healthy
 
   db:
     image: mysql:8.0
     container_name: refbot_mysql
+    profiles: ["local-db"]
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
